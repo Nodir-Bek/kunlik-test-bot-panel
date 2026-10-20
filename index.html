@@ -1,0 +1,193 @@
+<!doctype html>
+<!-- © 2026 Muhammadmuso (@muhammadmuso_officall). Barcha huquqlar himoyalangan. -->
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kunlik test bot — sozlamalar</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --bg-2: var(--tg-theme-secondary-bg-color, #f2f2f7);
+    --text: var(--tg-theme-text-color, #111111);
+    --hint: var(--tg-theme-hint-color, #8a8a8e);
+    --accent: var(--tg-theme-button-color, #2481cc);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --danger: var(--tg-theme-destructive-text-color, #d93025);
+    --radius: 12px;
+    --gap: 16px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg-2); color: var(--text);
+    font: 16px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 520px; margin: 0 auto; padding: var(--gap) var(--gap) 96px; }
+  h1 { font-size: 22px; font-weight: 700; margin: 4px 0 4px; }
+  .lead { color: var(--hint); margin: 0 0 var(--gap); font-size: 14px; }
+  section { background: var(--bg); border-radius: var(--radius); padding: var(--gap); margin-bottom: var(--gap); }
+  h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--hint); margin: 0 0 12px; }
+
+  /* signature: the day as a line */
+  .rhythm { position: relative; height: 76px; margin: 0 4px 8px; }
+  .rhythm .line { position: absolute; left: 0; right: 0; top: 36px; height: 4px; border-radius: 2px; background: var(--bg-2); }
+  .rhythm .active { position: absolute; top: 36px; height: 4px; border-radius: 2px; background: var(--accent); opacity: .35; }
+  .dot { position: absolute; top: 0; bottom: 0; width: 0; }
+  .dot b { position: absolute; top: 28px; left: -10px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 3px solid var(--accent); }
+  .dot span { position: absolute; top: 56px; white-space: nowrap; font-size: 12px; color: var(--hint); }
+  .dot.prep b { border-style: dashed; }
+  .dot.prep span { top: 4px; }  /* above the line: preparation is often right next to the announcement */
+  .mode { font-size: 14px; margin: 0; }
+
+  label { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+  label + label { border-top: 1px solid var(--bg-2); }
+  label span small { display: block; color: var(--hint); font-size: 13px; }
+  input, select {
+    font: inherit; color: var(--text); background: var(--bg-2); border: 0; border-radius: 8px;
+    padding: 8px 10px; min-height: 40px;
+  }
+  input[type=time] { width: 112px; text-align: center; }
+  select, .full { width: 100%; }
+  .stack { display: block; }
+  .stack > span { display: block; margin-bottom: 8px; }
+  details summary { cursor: pointer; color: var(--accent); padding: 10px 0 2px; list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  .meta { color: var(--hint); font-size: 13px; margin-top: 6px; }
+  .error { color: var(--danger); font-size: 14px; min-height: 20px; margin: 0; }
+  .fallback { display: none; width: 100%; min-height: 48px; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600; }
+  .fallback:disabled { opacity: .5; }
+  footer { text-align: center; color: var(--hint); font-size: 12px; margin-top: 8px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sozlamalar</h1>
+  <p class="lead">Kunlik viktorina qachon tayyorlanishi, yuborilishi va g'olib qachon e'lon qilinishi.</p>
+
+  <section aria-labelledby="day-h">
+    <h2 id="day-h">Kun tartibi</h2>
+    <div class="rhythm" aria-hidden="true">
+      <div class="line"></div>
+      <div class="active" id="active"></div>
+      <div class="dot prep" id="dot-gen"><b></b><span></span></div>
+      <div class="dot" id="dot-send"><b></b><span></span></div>
+      <div class="dot" id="dot-ann"><b></b><span></span></div>
+    </div>
+    <p class="mode" id="mode" aria-live="polite"></p>
+
+    <label><span>📋 Savollarni tayyorlash<small>AI yozadi va tekshiradi (~6 daqiqa)</small></span><input type="time" id="gen" required></label>
+    <label><span>📤 Guruhga yuborish<small>90 ta test, har 3 soniyada</small></span><input type="time" id="send" required></label>
+    <label><span>🏆 G'olibni e'lon qilish</span><input type="time" id="ann" required></label>
+    <p class="error" id="time-error" role="alert"></p>
+  </section>
+
+  <section aria-labelledby="ai-h">
+    <h2 id="ai-h">Sun'iy intellekt</h2>
+    <label class="stack"><span>Model</span>
+      <select id="model">
+        <option value="gemini-3.8-flash">Gemini 3.8 Flash — tavsiya</option>
+        <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+        <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+        <option value="gemini-flash-latest">Gemini Flash (doim eng yangisi)</option>
+        <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite — tejamkor</option>
+        <option value="__other">Boshqa…</option>
+      </select>
+    </label>
+    <input class="full" id="model-other" placeholder="Model nomi, masalan gemini-3.8-flash" hidden autocomplete="off">
+
+    <details id="key-box">
+      <summary>🔑 API kalitni almashtirish</summary>
+      <input class="full" type="password" id="key" placeholder="Yangi kalit (AQ.… yoki AIza…)" autocomplete="off" spellcheck="false">
+      <p class="meta">Hozirgi kalit: <span id="key-now">—</span>. Bo'sh qoldirsangiz o'zgarmaydi. Bot kalitni sinab ko'radi va faqat ishlasa saqlaydi.</p>
+    </details>
+  </section>
+
+  <button class="fallback" id="fallback" disabled>Telegram ichida oching</button>
+  <footer>© 2026 Muhammadmuso (@muhammadmuso_officall). Barcha huquqlar himoyalangan.</footer>
+</main>
+
+<script>
+(function () {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTelegram = !!(tg && tg.initData);
+  const q = new URLSearchParams(location.search);
+  const $ = (id) => document.getElementById(id);
+  const gen = $("gen"), send = $("send"), ann = $("ann"), model = $("model"), other = $("model-other"), key = $("key");
+
+  gen.value = q.get("gen") || "22:00";
+  send.value = q.get("send") || "07:00";
+  ann.value = q.get("ann") || "20:00";
+  $("key-now").textContent = (q.get("key") || "—") + (q.get("src") ? " (" + q.get("src") + ")" : "");
+  const currentModel = q.get("model") || "gemini-3.8-flash";
+  if ([...model.options].some((o) => o.value === currentModel)) { model.value = currentModel; }
+  else { model.value = "__other"; other.value = currentModel; other.hidden = false; }
+
+  const mins = (v) => { const [h, m] = v.split(":").map(Number); return h * 60 + m; };
+  const pct = (v) => (mins(v) / 1440) * 100;
+
+  // same rules as app/config.py validate_schedule()
+  function check() {
+    if (!gen.value || !send.value || !ann.value) return "Uchala vaqtni kiriting.";
+    const g = mins(gen.value), s = mins(send.value), a = mins(ann.value);
+    if (!(s < a)) return "Yuborish vaqti g'olib e'lonidan oldin bo'lishi kerak.";
+    if (a > g && g > s) return "Tayyorlash vaqti yuborishdan oldin (ertalab) yoki g'olib e'lonidan keyin (kechqurun) bo'lsin.";
+    return "";
+  }
+
+  function draw() {
+    for (const [id, el, label] of [["dot-gen", gen, "Tayyorlash"], ["dot-send", send, "Yuborish"], ["dot-ann", ann, "G'olib"]]) {
+      if (!el.value) continue;
+      const dot = $(id), at = pct(el.value), text = dot.querySelector("span");
+      dot.style.left = at + "%";
+      text.textContent = label + " " + el.value;
+      // keep labels inside the card near the edges
+      text.style.transform = at < 15 ? "translateX(-12px)" : at > 85 ? "translateX(calc(-100% + 12px))" : "translateX(-50%)";
+    }
+    if (send.value && ann.value) {
+      $("active").style.left = pct(send.value) + "%";
+      $("active").style.width = Math.max(0, pct(ann.value) - pct(send.value)) + "%";
+    }
+    const error = check();
+    $("time-error").textContent = error;
+    if (!error) {
+      const evening = mins(gen.value) > mins(send.value);
+      $("mode").textContent = evening
+        ? "🌙 Savollar " + gen.value + " da ertangi kun uchun tayyorlanadi — ertalabgacha ko'rib, tuzatishga vaqt bor."
+        : "🌅 Savollar " + gen.value + " da shu kun uchun tayyorlanadi va " + send.value + " da yuboriladi.";
+    } else {
+      $("mode").textContent = "";
+    }
+    const ok = !error && (model.value !== "__other" || other.value.trim());
+    if (inTelegram) { ok ? tg.MainButton.enable() : tg.MainButton.disable(); }
+    return ok;
+  }
+
+  model.addEventListener("change", () => { other.hidden = model.value !== "__other"; if (!other.hidden) other.focus(); draw(); });
+  for (const el of [gen, send, ann, other]) el.addEventListener("input", draw);
+
+  function payload() {
+    return JSON.stringify({
+      v: 1,
+      generate_at: gen.value, send_at: send.value, announce_at: ann.value,
+      model: model.value === "__other" ? other.value.trim() : model.value,
+      key: key.value.trim(),
+    });
+  }
+
+  if (inTelegram) {
+    tg.ready();
+    tg.expand();
+    tg.MainButton.setParams({ text: "Saqlash", is_visible: true });
+    tg.MainButton.onClick(() => { if (draw()) tg.sendData(payload()); });
+  } else {
+    // opened in a normal browser: nothing can be saved from here
+    $("fallback").style.display = "block";
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

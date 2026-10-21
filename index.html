@@ -24,7 +24,7 @@
     font: 16px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  main { max-width: 520px; margin: 0 auto; padding: var(--gap) var(--gap) 96px; }
+  main { max-width: 520px; margin: 0 auto; padding: var(--gap) var(--gap) 24px; }
   h1 { font-size: 22px; font-weight: 700; margin: 4px 0 4px; }
   .lead { color: var(--hint); margin: 0 0 var(--gap); font-size: 14px; }
   section { background: var(--bg); border-radius: var(--radius); padding: var(--gap); margin-bottom: var(--gap); }
@@ -56,8 +56,8 @@
   details summary::-webkit-details-marker { display: none; }
   .meta { color: var(--hint); font-size: 13px; margin-top: 6px; }
   .error { color: var(--danger); font-size: 14px; min-height: 20px; margin: 0; }
-  .fallback { display: none; width: 100%; min-height: 48px; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600; }
-  .fallback:disabled { opacity: .5; }
+  .save { position: sticky; bottom: 12px; width: 100%; min-height: 48px; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600; cursor: pointer; }
+  .save:disabled { opacity: .5; cursor: default; }
   footer { text-align: center; color: var(--hint); font-size: 12px; margin-top: 8px; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
@@ -105,7 +105,7 @@
     </details>
   </section>
 
-  <button class="fallback" id="fallback" disabled>Telegram ichida oching</button>
+  <button class="save" id="save" disabled>Telegram ichida oching</button>
   <footer>© 2026 Muhammadmuso (@muhammadmuso_officall). Barcha huquqlar himoyalangan.</footer>
 </main>
 
@@ -115,7 +115,7 @@
   const inTelegram = !!(tg && tg.initData);
   const q = new URLSearchParams(location.search);
   const $ = (id) => document.getElementById(id);
-  const gen = $("gen"), send = $("send"), ann = $("ann"), model = $("model"), other = $("model-other"), key = $("key");
+  const gen = $("gen"), send = $("send"), ann = $("ann"), model = $("model"), other = $("model-other"), key = $("key"), save = $("save");
 
   gen.value = q.get("gen") || "22:00";
   send.value = q.get("send") || "07:00";
@@ -161,7 +161,7 @@
       $("mode").textContent = "";
     }
     const ok = !error && (model.value !== "__other" || other.value.trim());
-    if (inTelegram) { ok ? tg.MainButton.enable() : tg.MainButton.disable(); }
+    save.disabled = !(ok && inTelegram);
     return ok;
   }
 
@@ -177,14 +177,17 @@
     });
   }
 
+  // Our own button, not Telegram's MainButton: in Telegram Desktop MainButton clicks never reach the page.
+  save.addEventListener("click", () => {
+    if (!draw()) return;
+    save.disabled = true;
+    save.textContent = "Yuborilmoqda…";
+    tg.sendData(payload());  // the bot answers in the chat; Telegram closes this window
+  });
   if (inTelegram) {
     tg.ready();
     tg.expand();
-    tg.MainButton.setParams({ text: "Saqlash", is_visible: true });
-    tg.MainButton.onClick(() => { if (draw()) tg.sendData(payload()); });
-  } else {
-    // opened in a normal browser: nothing can be saved from here
-    $("fallback").style.display = "block";
+    save.textContent = "Saqlash";
   }
   draw();
 })();

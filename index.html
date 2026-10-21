@@ -133,7 +133,6 @@
     if (!gen.value || !send.value || !ann.value) return "Uchala vaqtni kiriting.";
     const g = mins(gen.value), s = mins(send.value), a = mins(ann.value);
     if (!(s < a)) return "Yuborish vaqti g'olib e'lonidan oldin bo'lishi kerak.";
-    if (a > g && g > s) return "Tayyorlash vaqti yuborishdan oldin (ertalab) yoki g'olib e'lonidan keyin (kechqurun) bo'lsin.";
     return "";
   }
 
@@ -155,7 +154,7 @@
     if (!error) {
       const evening = mins(gen.value) > mins(send.value);
       $("mode").textContent = evening
-        ? "🌙 Savollar " + gen.value + " da ertangi kun uchun tayyorlanadi — ertalabgacha ko'rib, tuzatishga vaqt bor."
+        ? "📋 Savollar " + gen.value + " da ertangi kun uchun oldindan tayyorlanadi — yuborilguncha ko'rib, tuzatishga vaqt bor."
         : "🌅 Savollar " + gen.value + " da shu kun uchun tayyorlanadi va " + send.value + " da yuboriladi.";
     } else {
       $("mode").textContent = "";
